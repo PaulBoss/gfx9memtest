@@ -1,0 +1,151 @@
+BDOS: EQU 0x05
+
+; BDOS calls
+_CONOUT: EQU 0x02
+_STROUT: EQU 0x09
+
+; V9990 ports
+P0: EQU 0x60
+P1: EQU 0X61
+P2: EQU 0X62
+P3: EQU 0X63
+P4: EQU 0X64
+P5: EQU 0X65
+P6: EQU 0X66
+P7: EQU 0X67
+PF: EQU 0X6F
+
+
+	org 0x100
+
+	LD D, 0
+
+TESTLOOP1:
+	LD BC, 0
+
+TESTLOOP2:
+	LD A,C
+	CP 0
+	JP NZ, DONTPRINT
+	
+	LD A, '.'
+	CALL PUTCHAR
+	
+DONTPRINT:
+	LD A, 0
+	OUT (0x64), A
+	CALL SETADDR
+	LD A, %10101010
+	OUT (0x60), A
+	
+	LD A,3
+	OUT (0x64),A
+	CALL SETADDR
+	
+	IN A,(0x60)
+	CP %10101010
+	JP NZ, ENDERROR
+	
+	INC BC
+	LD A,B
+	OR C
+	JP NZ, TESTLOOP2
+	INC D
+	LD A,8
+	CP D
+	JP NZ, TESTLOOP1
+	
+	LD DE, TXT_DONE
+	LD C, _STROUT
+	CALL BDOS
+	RET
+	
+ENDERROR:
+	PUSH DE
+	PUSH BC
+	
+	LD DE, TXT_ERROR
+	LD C, _STROUT
+	CALL BDOS
+	
+	POP BC
+	POP DE
+	
+	CALL DISPADDR
+	
+	RET
+
+
+DISPADDR:
+	LD A, D
+	CALL DISPA
+	LD A, 32
+	CALL PUTCHAR
+	LD A, B
+	CALL DISPA
+	LD A, 32
+	CALL PUTCHAR
+	
+	LD A, C
+	CALL DISPA
+	LD A, 32
+	CALL PUTCHAR
+	
+	RET
+	
+
+; Point to VRAM Address in DBC
+SETADDR:
+	LD A, C
+	OUT (0x63),A
+	LD A, B
+	OUT (0x63),A
+	LD A, D
+	OUT (0x63),A
+	RET
+
+; 	
+DISPA:
+	PUSH BC
+	PUSH DE
+	CALL DISPA2
+	POP DE
+	POP BC
+	RET
+	
+DISPA2:
+
+	ld	c,-100
+	call	Na1
+	ld	c,-10
+	call	Na1
+	ld	c,-1
+Na1:	ld	b,'0'-1
+Na2:	inc	b
+	add	a,c
+	jr	c,Na2
+	sub	c		;works as add 100/10/1
+	push af		;safer than ld c,a
+	ld	a,b		;char is in b
+	CALL	PUTCHAR	;plot a char. Replace with bcall(_PutC) or similar.
+	pop af		;safer than ld a,c
+	ret
+
+PUTCHAR:
+	PUSH DE
+	PUSH BC
+	
+	LD E, A
+	LD C, _CONOUT
+	CALL BDOS
+	
+	POP BC
+	POP DE
+	
+	RET
+
+
+TXT_ERROR: DB 13,10,"Error.",13,10,"$"
+TXT_DONE: DB 13,30,"Done.",13,10,"$"	
+	
+
