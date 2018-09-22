@@ -31,8 +31,8 @@ PF: EQU 0X6F
 	LD A,5
 	; Interslot call to the BIOS.
 	ld     iy,(EXPTBL-1)       ;BIOS slot in iyh
-    ld     ix,CHGMOD             ;address of BIOS routine
-    call   CALSLT              ;interslot call
+	ld     ix,CHGMOD             ;address of BIOS routine
+	call   CALSLT              ;interslot call
 
 	LD A,0
 	LD HL,0
